@@ -1,0 +1,70 @@
+name: Flutter CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.9.0' # or another version that you prefer
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.13.7' # specify the Flutter version
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Create configuration
+      run: |
+        echo "// config.dart" > lib/config.dart
+        echo "const String superSecretData = '${{ secrets.SUPER_SECRET_DATA }}';" >> lib/config.dart
+        echo "const String sentryDNS = '${{ secrets.SENTRY_DNS }}';" >> lib/config.dart
+        echo "const String notSoSecretData = '${{ secrets.NOT_SO_SECRET_DATA }}';" >> lib/config.dart
+
+    - name: Build Flutter Web
+      run: flutter build web --release --base-href /SentryLoggerApp/
+
+    - name: Test
+      run: dir
+
+    - name: Deploy to gh-pages
+      run: |
+        # Assuming YOUR_BUILD_FOLDER is already set with your build artifacts,
+        # and it's the folder you want to push to `gh-pages`
+
+        cd build/web
+        
+        # Initialize a new Git repository inside the build folder, 
+        # because your workspace already has a .git directory and you are essentially working with a fresh, separate repository now.
+        git init
+        
+        
+        git config user.name "${{ github.actor }}"
+        git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+        
+        # Instead of re-initializing, you can directly use git to add and commit
+        # Note: The email and name don't have to be real, they're just used for the commit details
+        git add .
+
+        git commit -m 'Deploy to gh-pages'
+
+        git remote add gh-token "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+
+        # Force push from the current repo's master branch to the remote
+        # repo's gh-pages branch. (All previous history on the gh-pages
+        # branch will be lost, since we are overwriting it.)
+        git push gh-token HEAD:gh-pages --force
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # This token is provided by Actions, you do not need to create your own token
