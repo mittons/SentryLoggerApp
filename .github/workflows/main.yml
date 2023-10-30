@@ -36,7 +36,7 @@ jobs:
       run: flutter build web --release --base-href /SentryLoggerApp/
 
     - name: Test
-      run: dir
+      run: echo "${{ github.actor }}"
 
     - name: Deploy to gh-pages
       run: |
@@ -52,6 +52,8 @@ jobs:
         
         git config user.name "${{ github.actor }}"
         git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+
 
         
         # Instead of re-initializing, you can directly use git to add and commit
